@@ -116,3 +116,4 @@ describe('Phase 8: Critical Business Flow & Access Control Tests', () => {
     expect(driver.earningsToday).toBe(startingEarnings + 15);
   });
 });
+

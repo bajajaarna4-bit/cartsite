@@ -89,6 +89,16 @@ export interface Ride {
   completedAt?: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  rideId: string;
+  senderId: string;
+  senderName: string;
+  senderRole: UserRole;
+  text: string;
+  timestamp: string;
+}
+
 export interface PaymentTransaction {
   id: string;
   userId: string;

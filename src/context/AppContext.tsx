@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import {
-  User, Driver, Cart, CampusLocation, AccessPass, Ride, PaymentTransaction, SosAlert, ToastMessage
+  User, Driver, Cart, CampusLocation, AccessPass, Ride, PaymentTransaction, SosAlert, ToastMessage, ChatMessage
 } from '../types';
 import {
   CAMPUS_LOCATIONS, INITIAL_USERS, INITIAL_CARTS, INITIAL_DRIVERS, INITIAL_PASSES, INITIAL_RIDES, INITIAL_PAYMENTS, INITIAL_SOS_ALERTS
@@ -24,8 +24,12 @@ interface AppContextType {
   rides: Ride[];
   payments: PaymentTransaction[];
   sosAlerts: SosAlert[];
+  chatMessages: ChatMessage[];
   campusLocations: CampusLocation[];
   toasts: ToastMessage[];
+
+  // Chat actions
+  sendChatMessage: (rideId: string, text: string) => void;
 
   // Toast actions
   addToast: (title: string, message: string, type?: ToastMessage['type']) => void;
@@ -73,6 +77,7 @@ const STORAGE_KEYS = {
   RIDES: 'campus_cart_rides_v2',
   PAYMENTS: 'campus_cart_payments_v2',
   SOS: 'campus_cart_sos_v2',
+  CHAT: 'campus_cart_chat_v2',
   CURRENT_USER_ID: 'campus_cart_cur_user_v2',
   DARK_MODE: 'campus_cart_dark_mode_v2',
 };
@@ -153,6 +158,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return saved ? JSON.parse(saved) : INITIAL_SOS_ALERTS;
   });
 
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.CHAT);
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // Current session user
   const [currentUserId, setCurrentUserId] = useState<string>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
@@ -172,6 +182,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.RIDES, JSON.stringify(rides)); }, [rides]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(payments)); }, [payments]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.SOS, JSON.stringify(sosAlerts)); }, [sosAlerts]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.CHAT, JSON.stringify(chatMessages)); }, [chatMessages]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, currentUserId); }, [currentUserId]);
 
   // Cross-tab synchronization via BroadcastChannel
@@ -598,6 +609,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     broadcastSync();
   }, [currentUser, broadcastSync, addToast]);
 
+  const sendChatMessage = useCallback((rideId: string, text: string) => {
+    const newMsg: ChatMessage = {
+      id: 'msg-' + Math.random().toString(36).substring(2, 9),
+      rideId,
+      senderId: currentUser.id,
+      senderName: currentUser.name,
+      senderRole: currentUser.role,
+      text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setChatMessages(prev => [...prev, newMsg]);
+    playNotificationSound();
+  }, [currentUser]);
+
   // Demo controls
   const resetDemoData = useCallback(() => {
     localStorage.clear();
@@ -654,6 +679,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         rides,
         payments,
         sosAlerts,
+        chatMessages,
+        sendChatMessage,
         campusLocations: CAMPUS_LOCATIONS,
         toasts,
         addToast,
